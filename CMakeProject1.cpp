@@ -4,7 +4,7 @@
 #include "CMakeProject1.h"
 #include <vector>
 #include <algorithm>
-
+#include <map> 
 using namespace std;
 
 template <typename T>
@@ -22,7 +22,8 @@ struct Move {
     int j;
     int score;
 };
-
+map<int, int> StateCache;
+int cch_pts = 0;
 bool move_sorter(Move const& move1, Move const& move2) {
     return move1.score > move2.score;
 }
@@ -51,7 +52,7 @@ int fc = 0;
 const int FiguresToWin = 5;
 const int Rows = 15;
 const int Columns = 15;
-const bool WIN_DETECTED = false;
+const int WIN_DETECTED = -9999999999;
 const int LiveOne = 10;
 const int DeadOne = 1;
 const int LiveTwo = 100;
@@ -334,31 +335,122 @@ auto Change_restrictions(int restrictions[], int i, int j) {
     return restrictions;
 }
 
-//function BoardGenerator(restrictions, Board, player) {
-//    let availSpots_score = []; //c is j  r is i;
-//    let min_r = restrictions[0];
-//    let min_c = restrictions[1];
-//    let max_r = restrictions[2];
-//    let max_c = restrictions[3];
-//    let move = {};
-//    for (var i = min_r - 2; i <= max_r + 2; i++) {
-//        for (var j = min_c - 2; j <= max_c + 2; j++) {
-//            if (Board[i][j] == = 0 && !remoteCell(Board, i, j)) {
-//                move = {}
-//                move.i = i;
-//                move.j = j;
-//                move.score = evalute_move(Board, i, j, player)
-//                    if (move.score == = WIN_DETECTED) {
-//                        return[move]
-//                    }
-//                availSpots_score.push(move)
-//            }
-//        }
-//    }
-//    availSpots_score.sort(compare);
-//    //  return availSpots_score.slice(0,20)
-//    return availSpots_score;
-//}
+int get_seq(int y, int e) {
+    if (y + e ==  0) {
+        return 0;
+    }
+    if (y !=  0 && e == 0) {
+        return y;
+    }
+    if (y ==  0 && e != 0) {
+        return -e;
+    }
+    if (y !=  0 && e !=  0) {
+        return 17;
+    }
+}
+
+int evalff(int seq) {
+    switch (seq) {
+    case 0:
+        return 7;
+    case 1:
+        return 35;
+    case 2:
+        return 800;
+    case 3:
+        return 15000;
+    case 4:
+        return 800000;
+    case -1:
+        return 15;
+    case -2:
+        return 400;
+    case -3:
+        return 1800;
+    case -4:
+        return 100000;
+    case 17:
+        return 0;
+    }
+}
+int evaluate_state(int Board[15][15], int player, int hash,int restrictions[]) {
+    int  black_score = eval_board(Board, -1, restrictions);
+    int white_score = eval_board(Board, 1, restrictions);
+    int score = 0;
+    if (player = -1) {
+        score = -(black_score - white_score);
+    }
+    else {
+        score = -(white_score - black_score);
+    }
+    StateCache[hash] = score;
+    cch_pts++;
+    return score;
+}
+int evaluate_direction(vector<int> direction_arr, int player) {
+    int score = 0;
+    int arr_size = direction_arr.size();
+    for (int i = 0; (i + 4) < arr_size; i++) {
+        int you = 0;
+        int enemy = 0;
+        for (int j = 0; j <= 4; j++) {
+            if (direction_arr[i + j] ==  player) {
+                you++;
+            }
+            else if (direction_arr[i + j] == -player) {
+                enemy++;
+            }
+        }
+        score += evalff(get_seq(you, enemy));
+        if ((score >= 800000)) {
+            return WIN_DETECTED;
+        }
+    }
+    return score;
+}
+
+int evalute_move(int Board[15][15], int x, int y, int player) {
+    int score = 0;
+    vector<vector<int>> Directions = get_directions(Board, x, y);
+    int temp_score;
+    for (int i = 0; i < 4; i++) {
+        temp_score = evaluate_direction(Directions[i], player);
+        if (temp_score == WIN_DETECTED) {
+            return WIN_DETECTED;
+        }
+        else {
+            score += temp_score;
+        }
+    }
+    return score;
+}
+
+vector<Move> BoardGenerator(int restrictions[], int Board[15][15], int player) {
+    vector<Move> availSpots_score; //c is j  r is i;
+    int  min_r = restrictions[0];
+    int min_c = restrictions[1];
+    int max_r = restrictions[2];
+    int max_c = restrictions[3];
+    for (int i = min_r - 2; i <= max_r + 2; i++) {
+        for (int j = min_c - 2; j <= max_c + 2; j++) {
+            if (Board[i][j] ==  0 && !remoteCell(Board, i, j)) {
+                Move move;
+                move.i = i;
+                move.j = j;
+                move.score = evalute_move(Board, i, j, player);
+                    if (move.score ==  WIN_DETECTED) {
+                    vector<Move> winning_move = { move };
+                        return winning_move;
+                    }
+                    availSpots_score.push_back(move);
+            }
+        }
+    }
+    sort(availSpots_score.begin(), availSpots_score.end(), move_sorter);
+    //  return availSpots_score.slice(0,20)
+    return availSpots_score;
+}
 
 int main()
 {    
@@ -368,19 +460,20 @@ int main()
 
    /* bool res = checkwin(GameBoard, 0, 0);
     cout << res << endl;*/
-    vector<Move> abcde;
-    Move m1;
-    m1.i = 1;
-    m1.j = 1;
-    m1.score = 1;
-    Move m2;
-    m2.i = 1;
-    m2.j = 1;
-    m2.score = 2;
-    abcde.push_back(m1);
-    abcde.push_back(m2);
-    sort(abcde.begin(), abcde.end(), move_sorter);
-    cout << abcde[0].score << endl;
+    //vector<Move> abcde;
+    //Move m1;
+    //m1.i = 1;
+    //m1.j = 1;
+    //m1.score = 1;
+    //Move m2;
+    //m2.i = 1;
+    //m2.j = 1;
+    //m2.score = 2;
+    //abcde.push_back(m1);
+    //abcde.push_back(m2);
+    //sort(abcde.begin(), abcde.end(), move_sorter);
+    //cout << abcde[0].score << endl;
+
     //for (int i = 0; i < 4; i++) {
     //   
     //    for (int x : abc[i]) {
