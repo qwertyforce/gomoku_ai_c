@@ -3,6 +3,7 @@
 
 #include "CMakeProject1.h"
 #include <vector>
+#include <array>
 #include <algorithm>
 #include <map> 
 using namespace std;
@@ -15,6 +16,13 @@ std::ostream& operator<< (std::ostream& out, const std::vector<T>& v) {
         out << "\b\b]";
     }
     return out;
+}
+
+template <class T, std::size_t N>
+ostream& operator<<(ostream& o, const array<T, N>& arr)
+{
+    copy(arr.cbegin(), arr.cend(), ostream_iterator<T>(o, " "));
+    return o;
 }
 
 struct Move {
@@ -30,10 +38,10 @@ bool move_sorter(Move const& move1, Move const& move2) {
 
 int GameBoard[15][15] = {
     //0 1  2  3  4  5  6  7  8  9  0  1  2  3  4      
-    {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, //0
-    { 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, //1
-    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, //2
-    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, //3
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, //0
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0 }, //1
+    { 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0 }, //2
+    { 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0 }, //3
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, //4
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, //5
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, //6
@@ -102,7 +110,7 @@ int evaluateblock(int blocks, int pieces) {
 }
 
 
-int eval_board(int Board[Rows][Columns], int pieceType, int restrictions[]) {
+int eval_board(int Board[Rows][Columns], int pieceType, array<int,4> restrictions) {
     int score = 0;
     int min_r = restrictions[0];
     int min_c = restrictions[1];
@@ -268,7 +276,7 @@ bool remoteCell(int Board[15][15], int r, int c) {
     }
     return true;
 }
-auto Get_restrictions(int Board[15][15]) {
+array<int,4> Get_restrictions(int Board[15][15]) {
     int min_r = numeric_limits<int>::max();
     int min_c = numeric_limits<int>::max();
     int max_r = numeric_limits<int>::min();
@@ -295,7 +303,9 @@ auto Get_restrictions(int Board[15][15]) {
     if (max_c + 2 >= Columns) {
         max_c = Columns - 3;
     }
-    vector<int>* restrictions = new vector<int>({ min_r, min_c, max_r, max_c });
+    array<int, 4> myarray;
+
+    array<int,4> restrictions = { min_r, min_c, max_r, max_c };
     return restrictions;
 }
 
@@ -374,11 +384,11 @@ int evalff(int seq) {
         return 0;
     }
 }
-int evaluate_state(int Board[15][15], int player, int hash,int restrictions[]) {
+int evaluate_state(int Board[15][15], int player, int hash,array<int,4> restrictions) {
     int  black_score = eval_board(Board, -1, restrictions);
     int white_score = eval_board(Board, 1, restrictions);
     int score = 0;
-    if (player = -1) {
+    if (player == -1) {
         score = -(black_score - white_score);
     }
     else {
@@ -426,7 +436,7 @@ int evalute_move(int Board[15][15], int x, int y, int player) {
     return score;
 }
 
-vector<Move> BoardGenerator(int restrictions[], int Board[15][15], int player) {
+vector<Move> BoardGenerator(array<int,4> restrictions, int Board[15][15], int player) {
     vector<Move> availSpots_score; //c is j  r is i;
     int  min_r = restrictions[0];
     int min_c = restrictions[1];
@@ -454,6 +464,18 @@ vector<Move> BoardGenerator(int restrictions[], int Board[15][15], int player) {
 
 int main()
 {    
+    array<int, 4> asd = Get_restrictions(GameBoard);
+    cout << asd << endl;
+    int board_ev_score = eval_board(GameBoard, 1, asd);
+    cout << board_ev_score << endl;
+ /*   auto board = BoardGenerator(asd, GameBoard, 1);
+    for (const auto& move : board) {
+        cout << move.i << ' ' << move.j << ' '  << move.score << endl;
+    }*/
+
+    
+    
+    
     /*vector<int> abdc = { 1,2,3 };*/
     /*auto abc = get_directions(GameBoard,0,0);
     cout << GameBoard[0][0] << endl;*/
