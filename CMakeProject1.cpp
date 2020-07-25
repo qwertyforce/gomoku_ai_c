@@ -17,6 +17,16 @@ std::ostream& operator<< (std::ostream& out, const std::vector<T>& v) {
     return out;
 }
 
+struct Move {
+    int i;
+    int j;
+    int score;
+};
+
+bool move_sorter(Move const& move1, Move const& move2) {
+    return move1.score > move2.score;
+}
+
 int GameBoard[15][15] = {
     //0 1  2  3  4  5  6  7  8  9  0  1  2  3  4      
     {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, //0
@@ -356,8 +366,21 @@ int main()
     /*auto abc = get_directions(GameBoard,0,0);
     cout << GameBoard[0][0] << endl;*/
 
-    bool res = checkwin(GameBoard, 0, 0);
-    cout << res << endl;
+   /* bool res = checkwin(GameBoard, 0, 0);
+    cout << res << endl;*/
+    vector<Move> abcde;
+    Move m1;
+    m1.i = 1;
+    m1.j = 1;
+    m1.score = 1;
+    Move m2;
+    m2.i = 1;
+    m2.j = 1;
+    m2.score = 2;
+    abcde.push_back(m1);
+    abcde.push_back(m2);
+    sort(abcde.begin(), abcde.end(), move_sorter);
+    cout << abcde[0].score << endl;
     //for (int i = 0; i < 4; i++) {
     //   
     //    for (int x : abc[i]) {
