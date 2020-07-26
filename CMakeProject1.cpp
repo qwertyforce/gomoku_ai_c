@@ -6,6 +6,8 @@
 #include <array>
 #include <algorithm>
 #include <map> 
+#include <time.h>
+#include <random>
 using namespace std;
 
 template <typename T>
@@ -30,7 +32,15 @@ struct Move {
     int j;
     int score;
 };
+
+struct CacheNode {
+    int score;
+    int depth;
+    int Flag;
+};
+
 map<int, int> StateCache;
+map<int, CacheNode> Cache;
 int cch_pts = 0;
 bool move_sorter(Move const& move1, Move const& move2) {
     return move1.score > move2.score;
@@ -303,13 +313,11 @@ array<int,4> Get_restrictions(int Board[15][15]) {
     if (max_c + 2 >= Columns) {
         max_c = Columns - 3;
     }
-    array<int, 4> myarray;
-
     array<int,4> restrictions = { min_r, min_c, max_r, max_c };
     return restrictions;
 }
 
-auto Change_restrictions(int restrictions[], int i, int j) {
+void Change_restrictions(array<int, 4> &restrictions, int i, int j) {
     int min_r = restrictions[0];
     int min_c = restrictions[1];
     int max_r = restrictions[2];
@@ -342,7 +350,7 @@ auto Change_restrictions(int restrictions[], int i, int j) {
     restrictions[1] = min_c;
     restrictions[2] = max_r;
     restrictions[3] = max_c;
-    return restrictions;
+   /* return restrictions;*/
 }
 
 int get_seq(int y, int e) {
@@ -461,20 +469,155 @@ vector<Move> BoardGenerator(array<int,4> restrictions, int Board[15][15], int pl
     //  return availSpots_score.slice(0,20)
     return availSpots_score;
 }
+int Table[Rows][Columns][2];
+mt19937 mt_rand(time(0));
+void Table_init() {
+    for (int i = 0; i < Rows; i++) {
+        for (int j = 0; j < Columns; j++) {
+            Table[i][j][0] = mt_rand(); //1
+            Table[i][j][1] = mt_rand(); //2
+        }
+    }
+}
+
+int hash_board(int board[15][15]) {
+    int h = 0;
+    int p;
+    for (int i = 0; i < Rows; i++) {
+        for (int j = 0; j < Columns; j++) {
+            int Board_value = board[i][j];
+            if (Board_value !=  0) {
+                if (Board_value ==  -1) {
+                    p = 0;
+                }
+                else {
+                    p = 1;
+                }
+                h = h ^ Table[i][j][p];
+            }
+        }
+    }
+    return h;
+}
+
+int  update_hash(int hash, int player, int row, int col) {
+    if (player ==  -1) {
+        player = 0;
+    }
+    else {
+        player = 1;
+    }
+    hash = hash ^ Table[row][col][player];
+    return hash;
+}
+int CacheHits = 0;
+int CacheCutoffs = 0; 
+int CachePuts = 0;
+int MaximumDepth = 6;
+int cch_hts = 0;
+int negamax(int newBoard[15][15], int player, int depth, int a, int b, int hash, array<int,4> restrictions, int last_i, int last_j) {
+    const int alphaOrig = a;
+    if ((Cache.count(hash)) && (Cache[hash].depth >= depth)) { //if exists
+        CacheHits++;
+        int score = Cache[hash].score;
+        if (Cache[hash].Flag ==  0) {
+            CacheCutoffs++;
+            return score;
+        }
+        if (Cache[hash].Flag ==  -1) {
+            a = max(a, score);
+        }
+        else if (Cache[hash].Flag ==  1) {
+            b = min(b, score);
+        }
+        if (a >= b) {
+            CacheCutoffs++;
+            return score;
+        }
+    }
+    fc++;
+    if (checkwin(newBoard, last_i, last_j)) {
+        return -2000000 + (MaximumDepth - depth);
+    }
+    if (depth ==  0) {
+        if (StateCache.count(hash)) { //if exists
+            cch_hts++;
+                return StateCache[hash];
+        }
+        return evaluate_state(newBoard, player, hash, restrictions);
+    }
+    vector<Move> availSpots = BoardGenerator(restrictions, newBoard, player);
+    if (availSpots.size() == 0) {
+        return 0;
+    }
+
+    Move bestMove;
+    int i, j;
+    int newHash;
+    int bestvalue = numeric_limits<int>::min();
+    int value;
+
+    for (int y = 0; y < availSpots.size(); y++) {
+        i = availSpots[y].i;
+        j = availSpots[y].j;
+        newHash = update_hash(hash, player, i, j);
+            newBoard[i][j] = player;
+            Change_restrictions(restrictions, i, j);
+                value = -negamax(newBoard, -player, depth - 1, -b, -a, newHash, restrictions, i, j);
+            newBoard[i][j] = 0;
+        if (value > bestvalue) {
+            bestvalue = value;
+                if (depth == MaximumDepth) {
+                    bestMove = { i,j,value };
+                }
+        }
+        a = max(a, value);
+            if (a >= b) {
+                break;
+            }
+    }
+    CachePuts++;
+    CacheNode cache_node;
+    
+    cache_node.score = bestvalue;
+    cache_node.depth = depth;
+        if (bestvalue <= alphaOrig) {
+            cache_node.Flag = 1;
+        }
+        else if (bestvalue >= b) {
+            cache_node.Flag = -1;
+        }
+        else {
+            cache_node.Flag = 0;
+        }
+        Cache[hash] = cache_node;
+    if (false) {
+     //   return bestMove;
+    }
+    else {
+        return bestvalue;
+    }
+}
 
 int main()
 {    
-    array<int, 4> asd = Get_restrictions(GameBoard);
+    MaximumDepth = 2;
+    int depth = 2;
+    int player = 1;
+    int res = negamax(GameBoard, player, depth, numeric_limits<int>::min(), numeric_limits<int>::max(), hash_board(GameBoard), Get_restrictions(GameBoard), 0, 0);
+
+  /*  array<int, 4> asd = Get_restrictions(GameBoard);
     cout << asd << endl;
     int board_ev_score = eval_board(GameBoard, 1, asd);
-    cout << board_ev_score << endl;
+    cout << board_ev_score << endl;*/
  /*   auto board = BoardGenerator(asd, GameBoard, 1);
     for (const auto& move : board) {
         cout << move.i << ' ' << move.j << ' '  << move.score << endl;
     }*/
-
-    
-    
+    //array<int, 4> asd = Get_restrictions(GameBoard);
+    //cout << asd << endl;
+    //Change_restrictions(asd, 1, 1);
+    //cout << asd << endl;
     
     /*vector<int> abdc = { 1,2,3 };*/
     /*auto abc = get_directions(GameBoard,0,0);
