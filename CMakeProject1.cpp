@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <map> 
 #include <time.h>
+#include <chrono>
 #include <random>
 using namespace std;
 
@@ -119,8 +120,7 @@ int evaluateblock(int blocks, int pieces) {
     }
 }
 
-
-int eval_board(int Board[Rows][Columns], int pieceType, array<int,4> restrictions) {
+int eval_board(int Board[Rows][Columns], int pieceType, array<int, 4> restrictions) {
     int score = 0;
     int min_r = restrictions[0];
     int min_c = restrictions[1];
@@ -132,18 +132,18 @@ int eval_board(int Board[Rows][Columns], int pieceType, array<int,4> restriction
                 int block = 0;
                 int piece = 1;
                 // left
-                if (column ==  0 || Board[row][column - 1] !=  0) {
+                if (column == 0 || Board[row][column - 1] != 0) {
                     block++;
                 }
                 // pieceNum
-                for (column++; column < Columns && Board[row][column] ==  pieceType; column++) {
+                for (column++; column < Columns && Board[row][column] == pieceType; column++) {
                     piece++;
                 }
                 // right
-                if (column ==  Columns || Board[row][column] !=  0) {
+                if (column == Columns || Board[row][column] != 0) {
                     block++;
                 }
-                score = score +  evaluateblock(block, piece);
+                score = score + evaluateblock(block, piece);
             }
         }
     }
@@ -154,15 +154,15 @@ int eval_board(int Board[Rows][Columns], int pieceType, array<int,4> restriction
                 int block = 0;
                 int piece = 1;
                 // left
-                if (row ==  0 || Board[row - 1][column] !=  0) {
+                if (row == 0 || Board[row - 1][column] != 0) {
                     block++;
                 }
                 // pieceNum
-                for (row++; row < Rows && Board[row][column] ==  pieceType; row++) {
+                for (row++; row < Rows && Board[row][column] == pieceType; row++) {
                     piece++;
                 }
                 // right
-                if (row ==  Rows || Board[row][column] !=  0) {
+                if (row == Rows || Board[row][column] != 0) {
                     block++;
                 }
                 score += evaluateblock(block, piece);
@@ -175,11 +175,11 @@ int eval_board(int Board[Rows][Columns], int pieceType, array<int,4> restriction
         int c = min_c;
         while (r >= min_r && c <= max_c) {
             if (r <= max_r) {
-                if (Board[r][c] ==  pieceType) {
+                if (Board[r][c] == pieceType) {
                     int block = 0;
                     int piece = 1;
                     // left
-                    if (c ==  0 || r ==  Rows - 1 || Board[r + 1][c - 1] !=  0) {
+                    if (c == 0 || r == Rows - 1 || Board[r + 1][c - 1] != 0) {
                         block++;
                     }
                     // pieceNum
@@ -190,7 +190,7 @@ int eval_board(int Board[Rows][Columns], int pieceType, array<int,4> restriction
                         c++;
                     }
                     // right
-                    if (r < 0 || c ==  Columns || Board[r][c] !=  0) {
+                    if (r < 0 || c == Columns || Board[r][c] != 0) {
                         block++;
                     }
                     score += evaluateblock(block, piece);
@@ -210,7 +210,7 @@ int eval_board(int Board[Rows][Columns], int pieceType, array<int,4> restriction
                     int  block = 0;
                     int piece = 1;
                     // left
-                    if (c == 0 || r ==  0 || Board[r - 1][c - 1] !=  0) {
+                    if (c == 0 || r == 0 || Board[r - 1][c - 1] != 0) {
                         block++;
                     }
                     // pieceNum
@@ -221,7 +221,7 @@ int eval_board(int Board[Rows][Columns], int pieceType, array<int,4> restriction
                         c++;
                     }
                     // right
-                    if (r ==  Rows || c ==  Columns || Board[r][c] !=  0) {
+                    if (r == Rows || c == Columns || Board[r][c] != 0) {
                         block++;
                     }
                     score += evaluateblock(block, piece);
@@ -317,7 +317,7 @@ array<int,4> Get_restrictions(int Board[15][15]) {
     return restrictions;
 }
 
-void Change_restrictions(array<int, 4> &restrictions, int i, int j) {
+array<int, 4> Change_restrictions(array<int, 4> &restrictions, int i, int j) {
     int min_r = restrictions[0];
     int min_c = restrictions[1];
     int max_r = restrictions[2];
@@ -346,11 +346,8 @@ void Change_restrictions(array<int, 4> &restrictions, int i, int j) {
     if (max_c + 2 >= Columns) {
         max_c = Columns - 3;
     }
-    restrictions[0] = min_r;
-    restrictions[1] = min_c;
-    restrictions[2] = max_r;
-    restrictions[3] = max_c;
-   /* return restrictions;*/
+    array<int, 4> new_restrictions = { min_r, min_c, max_r, max_c };
+    return new_restrictions;
 }
 
 int get_seq(int y, int e) {
@@ -393,14 +390,16 @@ int evalff(int seq) {
     }
 }
 int evaluate_state(int Board[15][15], int player, int hash,array<int,4> restrictions) {
-    int  black_score = eval_board(Board, -1, restrictions);
+    int black_score = eval_board(Board, -1, restrictions);
     int white_score = eval_board(Board, 1, restrictions);
+    //cout << black_score << endl;
+    //cout << white_score << endl;
     int score = 0;
     if (player == -1) {
-        score = -(black_score - white_score);
+        score = (black_score - white_score);
     }
     else {
-        score = -(white_score - black_score);
+        score = (white_score - black_score);
     }
     StateCache[hash] = score;
     cch_pts++;
@@ -422,6 +421,7 @@ int evaluate_direction(vector<int> direction_arr, int player) {
         }
         score += evalff(get_seq(you, enemy));
         if ((score >= 800000)) {
+         /*   cout << "fqwefewf" << endl;*/
             return WIN_DETECTED;
         }
     }
@@ -516,25 +516,26 @@ int CachePuts = 0;
 int MaximumDepth = 6;
 int cch_hts = 0;
 int negamax(int newBoard[15][15], int player, int depth, int a, int b, int hash, array<int,4> restrictions, int last_i, int last_j) {
+    //cout << last_i << " " << last_j << endl;
     const int alphaOrig = a;
-    if ((Cache.count(hash)) && (Cache[hash].depth >= depth)) { //if exists
-        CacheHits++;
-        int score = Cache[hash].score;
-        if (Cache[hash].Flag ==  0) {
-            CacheCutoffs++;
-            return score;
-        }
-        if (Cache[hash].Flag ==  -1) {
-            a = max(a, score);
-        }
-        else if (Cache[hash].Flag ==  1) {
-            b = min(b, score);
-        }
-        if (a >= b) {
-            CacheCutoffs++;
-            return score;
-        }
-    }
+    //if ((Cache.count(hash)) && (Cache[hash].depth >= depth)) { //if exists
+    //    CacheHits++;
+    //    int score = Cache[hash].score;
+    //    if (Cache[hash].Flag ==  0) {
+    //        CacheCutoffs++;
+    //        return score;
+    //    }
+    //    if (Cache[hash].Flag ==  -1) {
+    //        a = max(a, score);
+    //    }
+    //    else if (Cache[hash].Flag ==  1) {
+    //        b = min(b, score);
+    //    }
+    //    if (a >= b) {
+    //        CacheCutoffs++;
+    //        return score;
+    //    }
+    //}
     fc++;
     if (checkwin(newBoard, last_i, last_j)) {
         return -2000000 + (MaximumDepth - depth);
@@ -547,7 +548,9 @@ int negamax(int newBoard[15][15], int player, int depth, int a, int b, int hash,
         return evaluate_state(newBoard, player, hash, restrictions);
     }
     vector<Move> availSpots = BoardGenerator(restrictions, newBoard, player);
-    if (availSpots.size() == 0) {
+    
+    int availSpots_size = availSpots.size();
+    if (availSpots_size == 0) {
         return 0;
     }
 
@@ -557,13 +560,14 @@ int negamax(int newBoard[15][15], int player, int depth, int a, int b, int hash,
     int bestvalue = numeric_limits<int>::min();
     int value;
 
-    for (int y = 0; y < availSpots.size(); y++) {
+    for (int y = 0; y < availSpots_size; y++) {
         i = availSpots[y].i;
         j = availSpots[y].j;
+        
         newHash = update_hash(hash, player, i, j);
             newBoard[i][j] = player;
-            Change_restrictions(restrictions, i, j);
-                value = -negamax(newBoard, -player, depth - 1, -b, -a, newHash, restrictions, i, j);
+            array<int, 4> new_restrictions = Change_restrictions(restrictions, i, j);
+                value = -negamax(newBoard, -player, depth - 1, -b, -a, newHash, new_restrictions, i, j);
             newBoard[i][j] = 0;
         if (value > bestvalue) {
             bestvalue = value;
@@ -576,7 +580,7 @@ int negamax(int newBoard[15][15], int player, int depth, int a, int b, int hash,
                 break;
             }
     }
-    CachePuts++;
+  /*  CachePuts++;
     CacheNode cache_node;
     
     cache_node.score = bestvalue;
@@ -590,7 +594,7 @@ int negamax(int newBoard[15][15], int player, int depth, int a, int b, int hash,
         else {
             cache_node.Flag = 0;
         }
-        Cache[hash] = cache_node;
+        Cache[hash] = cache_node;*/
     if (false) {
      //   return bestMove;
     }
@@ -604,8 +608,24 @@ int main()
     MaximumDepth = 2;
     int depth = 2;
     int player = 1;
-    int res = negamax(GameBoard, player, depth, numeric_limits<int>::min(), numeric_limits<int>::max(), hash_board(GameBoard), Get_restrictions(GameBoard), 0, 0);
+    Table_init();
+    //cout << hash_board(GameBoard) << endl;
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+   
 
+    int res = negamax(GameBoard, player, depth, numeric_limits<int>::min(), numeric_limits<int>::max(), hash_board(GameBoard), Get_restrictions(GameBoard), 0, 0);
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << "[ms]" << std::endl;
+    cout << res << endl;
+    cout << "fc: " << fc << endl;
+    cout << "CacheHits: " << CacheHits << endl;
+    cout << "CacheCutoffs: " << CacheCutoffs << endl;
+    cout << "CachePuts: " << CachePuts << endl;
+    cout << "StateCacheHits: " << cch_hts << endl;
+    cout << "StateCachePuts: " << cch_pts << endl;
+
+ /*   int ell = evaluate_state(GameBoard, 1, 0, Get_restrictions(GameBoard));
+    cout<<ell<<endl;*/
   /*  array<int, 4> asd = Get_restrictions(GameBoard);
     cout << asd << endl;
     int board_ev_score = eval_board(GameBoard, 1, asd);
