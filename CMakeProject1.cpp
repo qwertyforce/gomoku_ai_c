@@ -71,7 +71,7 @@ int fc = 0;
 const int FiguresToWin = 5;
 const int Rows = 15;
 const int Columns = 15;
-const int WIN_DETECTED = -9999999999;
+const int WIN_DETECTED = numeric_limits<int>::min() + 1;
 const int LiveOne = 10;
 const int DeadOne = 1;
 const int LiveTwo = 100;
@@ -120,7 +120,7 @@ int evaluateblock(int blocks, int pieces) {
     }
 }
 
-int eval_board(int Board[Rows][Columns], int pieceType, array<int, 4> restrictions) {
+int eval_board(int Board[Rows][Columns], int pieceType, array<int, 4> const& restrictions) {
     int score = 0;
     int min_r = restrictions[0];
     int min_c = restrictions[1];
@@ -235,7 +235,7 @@ int eval_board(int Board[Rows][Columns], int pieceType, array<int, 4> restrictio
     return score;
 }
 
-bool check_directions(vector<int> arr) {
+bool check_directions(vector<int> const& arr) {
     int size = arr.size();
     for (int i = 0; i < size - 4; i++) {
         if (arr[i] !=  0) {
@@ -247,26 +247,40 @@ bool check_directions(vector<int> arr) {
     return false;
 }
 vector <vector<int>> get_directions(int Board[15][15], int x, int y) {
-    vector <vector<int>> Directions = { {},{},{},{} };
+    vector<int> a;
+    a.reserve(9);
+    vector<int> b;
+    b.reserve(9);
+    vector<int> c;
+    c.reserve(9);
+    vector<int> d;
+    d.reserve(9);
+    //vector <vector<int>> Directions = { {},{},{},{} };
     for (int i = -4; i < 5; i++) {
         if (x + i >= 0 && x + i <= Rows - 1) {
-            Directions[0].push_back(Board[x + i][y]);
+            a.push_back(Board[x + i][y]);
                 if (y + i >= 0 && y + i <= Columns - 1) {
-                    Directions[2].push_back(Board[x + i][y + i]);
+                    b.push_back(Board[x + i][y + i]);
                 }
         }
         if (y + i >= 0 && y + i <= Columns - 1) {
-            Directions[1].push_back(Board[x][y + i]);
+           c.push_back(Board[x][y + i]);
                 if (x - i >= 0 && x - i <= Rows - 1) {
-                    Directions[3].push_back(Board[x - i][y + i]);
+                    d.push_back(Board[x - i][y + i]);
                 }
         }
 
     }
+    a.shrink_to_fit();
+    b.shrink_to_fit();
+    c.shrink_to_fit();
+    d.shrink_to_fit();
+    vector<vector<int>> Directions = { a,b,c,d };
     return Directions;
 }
 
 bool checkwin(int Board[15][15], int x, int y) {
+
    vector<vector<int>> Directions = get_directions(Board, x, y);
         for (int i = 0; i < 4; i++) {
             
@@ -317,7 +331,7 @@ array<int,4> Get_restrictions(int Board[15][15]) {
     return restrictions;
 }
 
-array<int, 4> Change_restrictions(array<int, 4> &restrictions, int i, int j) {
+array<int, 4> Change_restrictions(array<int, 4> const& restrictions, int i, int j) {
     int min_r = restrictions[0];
     int min_c = restrictions[1];
     int max_r = restrictions[2];
@@ -389,7 +403,7 @@ int evalff(int seq) {
         return 0;
     }
 }
-int evaluate_state(int Board[15][15], int player, int hash,array<int,4> restrictions) {
+int evaluate_state(int Board[15][15], int player, int hash,array<int,4> const& restrictions) {
     int black_score = eval_board(Board, -1, restrictions);
     int white_score = eval_board(Board, 1, restrictions);
     //cout << black_score << endl;
@@ -405,7 +419,7 @@ int evaluate_state(int Board[15][15], int player, int hash,array<int,4> restrict
     cch_pts++;
     return score;
 }
-int evaluate_direction(vector<int> direction_arr, int player) {
+int evaluate_direction(vector<int> const& direction_arr, int player) {
     int score = 0;
     int arr_size = direction_arr.size();
     for (int i = 0; (i + 4) < arr_size; i++) {
@@ -444,7 +458,7 @@ int evalute_move(int Board[15][15], int x, int y, int player) {
     return score;
 }
 
-vector<Move> BoardGenerator(array<int,4> restrictions, int Board[15][15], int player) {
+vector<Move> BoardGenerator(array<int,4> const& restrictions, int Board[15][15], int player) {
     vector<Move> availSpots_score; //c is j  r is i;
     int  min_r = restrictions[0];
     int min_c = restrictions[1];
@@ -516,7 +530,7 @@ int CachePuts = 0;
 int MaximumDepth = 6;
 int cch_hts = 0;
 int ccc = 0;
-int negamax(int newBoard[15][15], int player, int depth, int a, int b, int hash, array<int,4> restrictions, int last_i, int last_j) {
+int negamax(int newBoard[15][15], int player, int depth, int a, int b, int hash, array<int,4> const& restrictions, int last_i, int last_j) {
    /* cout << last_i << last_j <<  endl;
     cout << restrictions << endl;*/
     //cout << last_i << " " << last_j << endl;
@@ -598,6 +612,7 @@ int negamax(int newBoard[15][15], int player, int depth, int a, int b, int hash,
                 break;
             }
     }
+    //availSpots.clear();
   /*  CachePuts++;
     CacheNode cache_node;
     
@@ -633,7 +648,7 @@ int main()
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
    
 
-    int res = negamax(GameBoard, player, depth, numeric_limits<int>::min()+1, numeric_limits<int>::max(), hash_board(GameBoard)-1, Get_restrictions(GameBoard), 0, 0);
+    int res = negamax(GameBoard, player, depth, numeric_limits<int>::min()+1, numeric_limits<int>::max()-1, hash_board(GameBoard)-1, Get_restrictions(GameBoard), 0, 0);
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << "[ms]" << std::endl;
     cout << res << endl;
@@ -697,6 +712,6 @@ int main()
     //    }
     //}
    
-
+    system("pause");
 	return 0;
 }
