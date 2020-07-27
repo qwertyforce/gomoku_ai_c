@@ -246,7 +246,7 @@ bool check_directions(vector<int> const& arr) {
     }
     return false;
 }
-vector <vector<int>> get_directions(int Board[15][15], int x, int y) {
+array<vector<int>, 4> get_directions(int Board[15][15], int x, int y) {
     vector<int> a;
     a.reserve(9);
     vector<int> b;
@@ -275,13 +275,13 @@ vector <vector<int>> get_directions(int Board[15][15], int x, int y) {
     b.shrink_to_fit();
     c.shrink_to_fit();
     d.shrink_to_fit();
-    vector<vector<int>> Directions = { a,b,c,d };
+    array<vector<int>,4> Directions = { a,b,c,d };
     return Directions;
 }
 
 bool checkwin(int Board[15][15], int x, int y) {
 
-   vector<vector<int>> Directions = get_directions(Board, x, y);
+    array<vector<int>, 4> Directions = get_directions(Board, x, y);
         for (int i = 0; i < 4; i++) {
             
             if (check_directions(Directions[i])) {
@@ -303,8 +303,8 @@ bool remoteCell(int Board[15][15], int r, int c) {
 array<int,4> Get_restrictions(int Board[15][15]) {
     int min_r = numeric_limits<int>::max()-1;
     int min_c = numeric_limits<int>::max()-1;
-    int max_r = -numeric_limits<int>::min()+1;
-    int max_c = -numeric_limits<int>::min() + 1;
+    int max_r = numeric_limits<int>::min()+1;
+    int max_c = numeric_limits<int>::min() + 1;
     for (int i = 0; i < Rows; i++) {
         for (int j = 0; j < Columns; j++) {
             if (Board[i][j] !=  0) {
@@ -444,7 +444,7 @@ int evaluate_direction(vector<int> const& direction_arr, int player) {
 
 int evalute_move(int Board[15][15], int x, int y, int player) {
     int score = 0;
-    vector<vector<int>> Directions = get_directions(Board, x, y);
+    array<vector<int>, 4> Directions = get_directions(Board, x, y);
     int temp_score;
     for (int i = 0; i < 4; i++) {
         temp_score = evaluate_direction(Directions[i], player);
