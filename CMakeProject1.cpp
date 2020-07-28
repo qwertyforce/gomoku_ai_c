@@ -235,61 +235,84 @@ int eval_board(int Board[Rows][Columns], int pieceType, array<int, 4> const& res
     return score;
 }
 
-bool check_directions(vector<int> const& arr) {
-    int size = arr.size();
-    for (int i = 0; i < size - 4; i++) {
-        if (arr[i] !=  0) {
-            if (arr[i] ==  arr[i+1] && arr[i] ==  arr[i+2] && arr[i] ==  arr[i+3] && arr[i] ==  arr[i+4]) {
-                return true;
-            }
-        }       
-    }
-    return false;
-}
-array<vector<int>, 4> get_directions(int Board[15][15], int x, int y) {
-    vector<int> a;
-    a.reserve(9);
-    vector<int> b;
-    b.reserve(9);
-    vector<int> c;
-    c.reserve(9);
-    vector<int> d;
-    d.reserve(9);
+
+array<array<int, 9>, 4> get_directions(int Board[15][15], int x, int y) {
+    array<int, 9> a;
+    array<int, 9> b;
+    array<int, 9> c;
+    array<int, 9> d;
+    int a_i = 0;
+    int b_i = 0;
+    int c_i = 0;
+    int d_i = 0;
     //vector <vector<int>> Directions = { {},{},{},{} };
     for (int i = -4; i < 5; i++) {
         if (x + i >= 0 && x + i <= Rows - 1) {
-            a.push_back(Board[x + i][y]);
-                if (y + i >= 0 && y + i <= Columns - 1) {
-                    b.push_back(Board[x + i][y + i]);
-                }
+            a[a_i] = Board[x + i][y];
+            a_i++;
+            if (y + i >= 0 && y + i <= Columns - 1) {
+                b[b_i] = Board[x + i][y + i];
+                b_i++;
+            }
         }
         if (y + i >= 0 && y + i <= Columns - 1) {
-           c.push_back(Board[x][y + i]);
-                if (x - i >= 0 && x - i <= Rows - 1) {
-                    d.push_back(Board[x - i][y + i]);
-                }
+            c[c_i] = Board[x][y + i];
+            c_i++;
+            if (x - i >= 0 && x - i <= Rows - 1) {
+                d[d_i] = Board[x - i][y + i];
+                d_i++;
+            }
         }
 
     }
-    a.shrink_to_fit();
-    b.shrink_to_fit();
-    c.shrink_to_fit();
-    d.shrink_to_fit();
-    array<vector<int>,4> Directions = { a,b,c,d };
+    if (a_i != 9) {
+        a[a_i] = 2;
+    }
+    if (b_i != 9) {
+        b[b_i] = 2;
+    }
+    if (c_i != 9) {
+        c[c_i] = 2;
+    }
+    if (d_i != 9) {
+        d[d_i] = 2;
+    }
+    /*  a.shrink_to_fit();
+      b.shrink_to_fit();
+      c.shrink_to_fit();
+      d.shrink_to_fit();*/
+    array<array<int, 9>, 4> Directions = { a,b,c,d };
     return Directions;
 }
 
-bool checkwin(int Board[15][15], int x, int y) {
 
-    array<vector<int>, 4> Directions = get_directions(Board, x, y);
-        for (int i = 0; i < 4; i++) {
-            
-            if (check_directions(Directions[i])) {
+bool check_directions(array<int, 9> const& arr) {
+    int size = 9;
+    for (int i = 0; i < size - 4; i++) {
+        if (arr[i] != 0) {
+            if (arr[i] == 2 || arr[i + 1] == 2 || arr[i + 2] == 2 || arr[i + 3] == 2 || arr[i + 4] == 2) {
+                return false;
+            }
+            if (arr[i] == arr[i + 1] && arr[i] == arr[i + 2] && arr[i] == arr[i + 3] && arr[i] == arr[i + 4]) {
                 return true;
             }
         }
-        return false;
+    }
+    return false;
 }
+
+bool checkwin(int Board[15][15], int x, int y) {
+    array<array<int, 9>, 4> Directions = get_directions(Board, x, y);
+    for (int i = 0; i < 4; i++) {
+
+        if (check_directions(Directions[i])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
 bool remoteCell(int Board[15][15], int r, int c) {
     for (int i = r - 2; i <= r + 2; i++) {
         if (i < 0 || i >= Rows) continue;
@@ -419,14 +442,22 @@ int evaluate_state(int Board[15][15], int player, int hash,array<int,4> const& r
     cch_pts++;
     return score;
 }
-int evaluate_direction(vector<int> const& direction_arr, int player) {
+
+
+int evaluate_direction(array<int, 9> const& direction_arr, int player) {
     int score = 0;
     int arr_size = direction_arr.size();
     for (int i = 0; (i + 4) < arr_size; i++) {
         int you = 0;
         int enemy = 0;
+        if (direction_arr[i] == 2) {
+            return score;
+        }
         for (int j = 0; j <= 4; j++) {
-            if (direction_arr[i + j] ==  player) {
+            if (direction_arr[i + j] == 2) {
+                return score;
+            }
+            if (direction_arr[i + j] == player) {
                 you++;
             }
             else if (direction_arr[i + j] == -player) {
@@ -435,16 +466,18 @@ int evaluate_direction(vector<int> const& direction_arr, int player) {
         }
         score += evalff(get_seq(you, enemy));
         if ((score >= 800000)) {
-         /*   cout << "fqwefewf" << endl;*/
+            /*   cout << "fqwefewf" << endl;*/
             return WIN_DETECTED;
         }
     }
     return score;
 }
 
+
+
 int evalute_move(int Board[15][15], int x, int y, int player) {
     int score = 0;
-    array<vector<int>, 4> Directions = get_directions(Board, x, y);
+    array<array<int,9>, 4> Directions = get_directions(Board, x, y);
     int temp_score;
     for (int i = 0; i < 4; i++) {
         temp_score = evaluate_direction(Directions[i], player);
@@ -535,24 +568,24 @@ int negamax(int newBoard[15][15], int player, int depth, int a, int b, int hash,
     cout << restrictions << endl;*/
     //cout << last_i << " " << last_j << endl;
     const int alphaOrig = a;
-    //if ((Cache.count(hash)) && (Cache[hash].depth >= depth)) { //if exists
-    //    CacheHits++;
-    //    int score = Cache[hash].score;
-    //    if (Cache[hash].Flag ==  0) {
-    //        CacheCutoffs++;
-    //        return score;
-    //    }
-    //    if (Cache[hash].Flag ==  -1) {
-    //        a = max(a, score);
-    //    }
-    //    else if (Cache[hash].Flag ==  1) {
-    //        b = min(b, score);
-    //    }
-    //    if (a >= b) {
-    //        CacheCutoffs++;
-    //        return score;
-    //    }
-    //}
+    if ((Cache.count(hash)) && (Cache[hash].depth >= depth)) { //if exists
+        CacheHits++;
+        int score = Cache[hash].score;
+        if (Cache[hash].Flag ==  0) {
+            CacheCutoffs++;
+            return score;
+        }
+        if (Cache[hash].Flag ==  -1) {
+            a = max(a, score);
+        }
+        else if (Cache[hash].Flag ==  1) {
+            b = min(b, score);
+        }
+        if (a >= b) {
+            CacheCutoffs++;
+            return score;
+        }
+    }
     fc++;
     if (checkwin(newBoard, last_i, last_j)) {
        /* cout << "fejkdl" << endl;*/
@@ -613,7 +646,7 @@ int negamax(int newBoard[15][15], int player, int depth, int a, int b, int hash,
             }
     }
     //availSpots.clear();
-  /*  CachePuts++;
+    CachePuts++;
     CacheNode cache_node;
     
     cache_node.score = bestvalue;
@@ -627,7 +660,7 @@ int negamax(int newBoard[15][15], int player, int depth, int a, int b, int hash,
         else {
             cache_node.Flag = 0;
         }
-        Cache[hash] = cache_node;*/
+        Cache[hash] = cache_node;
     
     if (false) {
      //   return bestMove;
@@ -639,8 +672,8 @@ int negamax(int newBoard[15][15], int player, int depth, int a, int b, int hash,
 
 int main()
 {    
-    MaximumDepth = 6;
-    int depth = 6;
+    MaximumDepth = 8;
+    int depth =8;
  
     int player = 1;
     Table_init();
