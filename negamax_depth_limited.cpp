@@ -1,7 +1,7 @@
-﻿// CMakeProject1.cpp : Defines the entry point for the application.
+﻿// negamax_depth_limited.cpp : Defines the entry point for the application.
 //
 
-#include "CMakeProject1.h"
+#include "negamax_depth_limited.h"
 #include <vector>
 #include <array>
 #include <algorithm>
@@ -42,10 +42,16 @@ struct CacheNode {
 
 map<int, int> StateCache;
 map<int, CacheNode> Cache;
-int cch_pts = 0;
+int StateCachePuts = 0;
 bool move_sorter(Move const& move1, Move const& move2) {
     return move1.score > move2.score;
 }
+int CacheHits = 0;
+int CacheCutoffs = 0;
+int CachePuts = 0;
+int MaximumDepth = 0;
+int StateCacheHits = 0;
+Move bestMove;
 
 int GameBoard[15][15] = {
     //0  1  2  3  4  5  6  7  8  9  0  1  2  3  4      
@@ -235,7 +241,6 @@ int eval_board(int Board[Rows][Columns], int pieceType, array<int, 4> const& res
     return score;
 }
 
-
 array<array<int, 9>, 4> get_directions(int Board[15][15], int x, int y) {
     array<int, 9> a;
     array<int, 9> b;
@@ -245,42 +250,39 @@ array<array<int, 9>, 4> get_directions(int Board[15][15], int x, int y) {
     int b_i = 0;
     int c_i = 0;
     int d_i = 0;
-    //vector <vector<int>> Directions = { {},{},{},{} };
+
     for (int i = -4; i < 5; i++) {
         if (x + i >= 0 && x + i <= Rows - 1) {
-            a[a_i] = Board[x + i][y];
+			a[a_i] = Board[x + i][y];
             a_i++;
             if (y + i >= 0 && y + i <= Columns - 1) {
-                b[b_i] = Board[x + i][y + i];
+				b[b_i] = Board[x + i][y + i];
                 b_i++;
             }
         }
         if (y + i >= 0 && y + i <= Columns - 1) {
-            c[c_i] = Board[x][y + i];
+			c[c_i] = Board[x][y + i];
             c_i++;
             if (x - i >= 0 && x - i <= Rows - 1) {
-                d[d_i] = Board[x - i][y + i];
+				d[d_i] = Board[x - i][y + i];
                 d_i++;
             }
         }
 
     }
     if (a_i != 9) {
-        a[a_i] = 2;
+		a[a_i] = 2;
     }
     if (b_i != 9) {
-        b[b_i] = 2;
+		b[b_i] = 2;
     }
     if (c_i != 9) {
-        c[c_i] = 2;
+		c[c_i] = 2;
     }
     if (d_i != 9) {
-        d[d_i] = 2;
+		d[d_i] = 2;
     }
-    /*  a.shrink_to_fit();
-      b.shrink_to_fit();
-      c.shrink_to_fit();
-      d.shrink_to_fit();*/
+
     array<array<int, 9>, 4> Directions = { a,b,c,d };
     return Directions;
 }
@@ -429,8 +431,6 @@ int evalff(int seq) {
 int evaluate_state(int Board[15][15], int player, int hash,array<int,4> const& restrictions) {
     int black_score = eval_board(Board, -1, restrictions);
     int white_score = eval_board(Board, 1, restrictions);
-    //cout << black_score << endl;
-    //cout << white_score << endl;
     int score = 0;
     if (player == -1) {
         score = (black_score - white_score);
@@ -439,7 +439,7 @@ int evaluate_state(int Board[15][15], int player, int hash,array<int,4> const& r
         score = (white_score - black_score);
     }
     StateCache[hash] = score;
-    cch_pts++;
+    StateCachePuts++;
     return score;
 }
 
@@ -466,7 +466,6 @@ int evaluate_direction(array<int, 9> const& direction_arr, int player) {
         }
         score += evalff(get_seq(you, enemy));
         if ((score >= 800000)) {
-            /*   cout << "fqwefewf" << endl;*/
             return WIN_DETECTED;
         }
     }
@@ -557,16 +556,8 @@ int  update_hash(int hash, int player, int row, int col) {
     hash = hash ^ Table[row][col][player];
     return hash;
 }
-int CacheHits = 0;
-int CacheCutoffs = 0; 
-int CachePuts = 0;
-int MaximumDepth = 6;
-int cch_hts = 0;
-int ccc = 0;
+
 int negamax(int newBoard[15][15], int player, int depth, int a, int b, int hash, array<int,4> const& restrictions, int last_i, int last_j) {
-   /* cout << last_i << last_j <<  endl;
-    cout << restrictions << endl;*/
-    //cout << last_i << " " << last_j << endl;
     const int alphaOrig = a;
     if ((Cache.count(hash)) && (Cache[hash].depth >= depth)) { //if exists
         CacheHits++;
@@ -588,13 +579,11 @@ int negamax(int newBoard[15][15], int player, int depth, int a, int b, int hash,
     }
     fc++;
     if (checkwin(newBoard, last_i, last_j)) {
-       /* cout << "fejkdl" << endl;*/
         return -2000000 + (MaximumDepth - depth);
     }
     if (depth ==  0) {
-       /* cout << "depth 0" << endl;*/
         if (StateCache.count(hash)) { //if exists
-            cch_hts++;
+            StateCacheHits++;
             return StateCache[hash];
         }
         return evaluate_state(newBoard, player, hash, restrictions);
@@ -606,16 +595,11 @@ int negamax(int newBoard[15][15], int player, int depth, int a, int b, int hash,
         return 0;
     }
 
-    Move bestMove;
+  
     int i, j;
     int newHash;
     int bestvalue = numeric_limits<int>::min()+1;
     int value;
-  /*  cout << "===============" <<last_i<<" " <<last_j <<endl;
-    for (int y = 0; y < availSpots_size; y++) {
-        cout << availSpots[y].i << " " << availSpots[y].j << " " << availSpots[y].score << endl;
-    }
-    cout << "===============" << endl;*/
     for (int y = 0; y < availSpots_size; y++) {
         i = availSpots[y].i;
         j = availSpots[y].j;
@@ -624,7 +608,6 @@ int negamax(int newBoard[15][15], int player, int depth, int a, int b, int hash,
             newBoard[i][j] = player;
             array<int, 4> new_restrictions = Change_restrictions(restrictions, i, j);
             value = -negamax(newBoard, -player, depth - 1, -b, -a, newHash, new_restrictions, i, j);
-        /*    cout << i << " " << j << " " << value << endl;*/
             newBoard[i][j] = 0;
         if (value > bestvalue) {
             bestvalue = value;
@@ -634,14 +617,8 @@ int negamax(int newBoard[15][15], int player, int depth, int a, int b, int hash,
                     cout << bestMove.i << " " << bestMove.j << " " << bestMove.score << endl;
                 }
         }
-     /*   cout <<  "===========ab========" << endl;
-        cout << a << " " << b << endl;*/
             a = max(a, value);
-         /*   cout << a << " " << b << endl;*/
-           /*  cout <<  "=========abend==========" << endl;*/
             if (a >= b) {
-             /*   cout << "AB" << endl;
-                ccc++;*/
                 break;
             }
     }
@@ -661,13 +638,7 @@ int negamax(int newBoard[15][15], int player, int depth, int a, int b, int hash,
             cache_node.Flag = 0;
         }
         Cache[hash] = cache_node;
-    
-    if (false) {
-     //   return bestMove;
-    }
-    else {
         return bestvalue;
-    }
 }
 
 int main()
@@ -677,73 +648,22 @@ int main()
  
     int player = 1;
     Table_init();
-    //cout << hash_board(GameBoard) << endl;
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
    
 
     int res = negamax(GameBoard, player, depth, numeric_limits<int>::min()+1, numeric_limits<int>::max()-1, hash_board(GameBoard)-1, Get_restrictions(GameBoard), 0, 0);
+    Cache.clear();
+    StateCache.clear();
+    cout << "Best Move:" << bestMove.i << " " << bestMove.j << endl;
+    cout <<"Score: "<< res << endl;
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << "[ms]" << std::endl;
-    cout << res << endl;
-    //cout << ccc << endl;
     cout << "fc: " << fc << endl;
     cout << "CacheHits: " << CacheHits << endl;
     cout << "CacheCutoffs: " << CacheCutoffs << endl;
     cout << "CachePuts: " << CachePuts << endl;
-    cout << "StateCacheHits: " << cch_hts << endl;
-    cout << "StateCachePuts: " << cch_pts << endl;
-    //int a = numeric_limits<int>::infinity();
-    //int b = -numeric_limits<int>::infinity();
-    //    a=max(-123,a);
-    //    cout << a << endl;
-    //    cout << b << endl;
-    //    a = -(numeric_limits<int>::min() +1);
-    //    b = -(numeric_limits<int>::max()-1);
-    //    cout << a << endl;
-    //    cout << b << endl;
-
-
- /*   int ell = evaluate_state(GameBoard, 1, 0, Get_restrictions(GameBoard));
-    cout<<ell<<endl;*/
-  /*  array<int, 4> asd = Get_restrictions(GameBoard);
-    cout << asd << endl;
-    int board_ev_score = eval_board(GameBoard, 1, asd);
-    cout << board_ev_score << endl;*/
- /*   auto board = BoardGenerator(asd, GameBoard, 1);
-    for (const auto& move : board) {
-        cout << move.i << ' ' << move.j << ' '  << move.score << endl;
-    }*/
-    //array<int, 4> asd = Get_restrictions(GameBoard);
-    //cout << asd << endl;
-    //Change_restrictions(asd, 1, 1);
-    //cout << asd << endl;
-    
-    /*vector<int> abdc = { 1,2,3 };*/
-    /*auto abc = get_directions(GameBoard,0,0);
-    cout << GameBoard[0][0] << endl;*/
-
-   /* bool res = checkwin(GameBoard, 0, 0);
-    cout << res << endl;*/
-    //vector<Move> abcde;
-    //Move m1;
-    //m1.i = 1;
-    //m1.j = 1;
-    //m1.score = 1;
-    //Move m2;
-    //m2.i = 1;
-    //m2.j = 1;
-    //m2.score = 2;
-    //abcde.push_back(m1);
-    //abcde.push_back(m2);
-    //sort(abcde.begin(), abcde.end(), move_sorter);
-    //cout << abcde[0].score << endl;
-
-    //for (int i = 0; i < 4; i++) {
-    //   
-    //    for (int x : abc[i]) {
-    //        cout << x << endl;
-    //    }
-    //}
+    cout << "StateCacheHits: " << StateCacheHits << endl;
+    cout << "StateCachePuts: " << StateCachePuts << endl;
    
     system("pause");
 	return 0;
