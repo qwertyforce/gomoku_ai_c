@@ -71,10 +71,7 @@ int GameBoard[15][15] = {
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, //13
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, //14
 };
-const int aiPlayer = 1;
-const int huPlayer = -1;
 int fc = 0;
-const int FiguresToWin = 5;
 const int Rows = 15;
 const int Columns = 15;
 const int WIN_DETECTED = numeric_limits<int>::min() + 1;
